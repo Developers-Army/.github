@@ -4,8 +4,8 @@ Check the profile artwork renders safely as a GitHub README image.
 
 For every profile/assets/*.svg: it must parse as XML; use no <text> (all copy is outlined), no
 <script>, <foreignObject>, <image> or @import; reference nothing outside the file; stop its motion
-under prefers-reduced-motion if it animates; stay under the size budget; and have a dark and a
-light version.
+under prefers-reduced-motion if it animates; never loop forever (an image has no pause control, so
+all motion must end on its own); stay under the size budget; and have a dark and a light version.
 
     python scripts/check_svg.py
 """
@@ -45,6 +45,8 @@ def check(path: Path) -> list[str]:
                 problems.append(f"external reference {value!r}")
             if local(attr).startswith("on"):
                 problems.append(f"event handler {attr}")
+    if re.search(r"\binfinite\b|repeatCount=\"indefinite\"", raw):
+        problems.append("loops forever (a README image has no pause control; give it a finite count)")
     if "@import" in raw:
         problems.append("uses @import")
     if re.search(r"url\((?!#)", raw):

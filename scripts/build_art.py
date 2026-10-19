@@ -446,7 +446,7 @@ def formation(svg: Svg, x0: float, y0: float, unit: float, gap: float, pgap: flo
         "@media (prefers-reduced-motion:no-preference){"
         f".u{{animation:enter .9s {EASE_SPRING} var(--d) backwards,fade .3s {EASE_OUT} var(--d) backwards}}"
         f".duty{{animation:enter .9s {EASE_SPRING} var(--d) backwards,fade .3s {EASE_OUT} var(--d) backwards,"
-        f"duty 2.4s {EASE_IN_OUT} var(--p) infinite}}}}"
+        f"duty 2.4s {EASE_IN_OUT} var(--p) 2}}}}"
         "@keyframes enter{from{transform:translate(var(--x),var(--y)) rotate(var(--r)) scale(.6)}}"
         "@keyframes fade{from{opacity:0}}"
         "@keyframes duty{0%,100%{opacity:1}50%{opacity:.4}}"
@@ -542,14 +542,14 @@ def console(svg: Svg, x: float, y: float, w: float, h: float) -> None:
         out.append(f'<rect x="{num(mx + 22)}" y="{num(ry + 10)}" width="{num(mw * widths[r])}" height="6" rx="2" fill="{c["muted"]}" fill-opacity=".55"/>')
         out.append(f'<rect x="{num(mx + mw - 56)}" y="{num(ry + 8)}" width="56" height="10" rx="2" fill="none" stroke="{c["border"]}"/>')
     svg.add("<g>" + "".join(out) + "</g>")
-    # The selection steps through the projects: one console, several projects.
+    # The selection steps through the projects once (one console, several projects), then rests on the first.
     stops = []
     for k in range(4):
         a, b = k * 25, k * 25 + 21
         stops.append(f"{a}%,{b}%{{transform:translateY({k * row_h}px)}}")
     svg.css.append(
         "@media (prefers-reduced-motion:no-preference){"
-        f".sel{{animation:sel 10s {EASE_OUT} 1.5s infinite}}}}"
+        f".sel{{animation:sel 8s {EASE_OUT} 1s 1}}}}"
         "@keyframes sel{" + "".join(stops) + "100%{transform:translateY(0)}}"
     )
 
@@ -568,7 +568,7 @@ def sightline(theme: str) -> str:
     console(svg, 456, PAD - 8, W - 456 - PAD + 8, H - 2 * PAD + 16)
     svg.css.append(
         "@media (prefers-reduced-motion:no-preference){"
-        f".live{{animation:pulse 2.4s {EASE_IN_OUT} infinite}}}}"
+        f".live{{animation:pulse 2.4s {EASE_IN_OUT} 3}}}}"
         "@keyframes pulse{50%{opacity:.35}}"
         + REDUCED
     )
@@ -589,10 +589,10 @@ def in_the_works(theme: str) -> str:
     tx = PAD + 3 * size + 2 * gap + 34
     svg.text(DISPLAY, "Three more in the works.", tx, 80, 40, c["text"], TRACK_DISPLAY)
     svg.text(BODY, "We name them when they ship.", tx, 124, 30, c["muted"])
-    # The empty slots light up one after another: work under way, nothing named yet.
+    # The empty slots light up one after another, twice: work under way, nothing named yet.
     svg.css.append(
         "@media (prefers-reduced-motion:no-preference){"
-        f".slot{{animation:slot 3.6s {EASE_IN_OUT} infinite}}"
+        f".slot{{animation:slot 3.6s {EASE_IN_OUT} 2}}"
         ".s1{animation-delay:.4s}.s2{animation-delay:.8s}}"
         f"@keyframes slot{{0%,60%,100%{{stroke:{c['border_strong']}}}30%{{stroke:{c['secondary_text']}}}}}"
         + REDUCED
@@ -638,35 +638,35 @@ def agent_loop(theme: str) -> str:
         svg.text(MONO, f"{i + 1:02d}", x, rail + 42, 14, c["subtle"], TRACK_LABEL, anchor="middle")
         svg.text(BODY_STRONG, name, x, rail + 80, 28, c["text"], anchor="middle")
 
-    # One pass every 10 s: Brief, Agent, Pull request, Review; a pause while the arc draws back to
-    # the agent; then Ship. Resting state (no animation) is the finished pass.
+    # One 10 s pass on load: Brief, Agent, Pull request, Review; a pause while the arc draws back to
+    # the agent; then Ship. The last keyframe of every track equals the resting state (the finished
+    # pass, also the reduced-motion still), so the animation ends exactly where it rests.
     step = 192
     hold = f"animation-timing-function:{EASE_IN_OUT}"
     pos = [(0, 0, 0), (4, 0, 1), (10, 0, 1), (20, 1, 1), (30, 2, 1), (40, 3, 1), (62, 3, 1),
-           (76, 4, 1), (92, 4, 1), (97, 4, 0), (100, 4, 0)]
+           (80, 4, 1), (100, 4, 1)]
     mk = "".join(f"{p}%{{transform:translateX({(n - 4) * step}px);opacity:{o};{hold}}}" for p, n, o in pos)
     fill = "".join(f"{p}%{{transform:scaleX({n / 4});opacity:{o};{hold}}}" for p, n, o in pos)
-    reach = [4, 20, 30, 40, 76]
+    reach = [4, 20, 30, 40, 80]
     node_css = ""
     for i, t in enumerate(reach):
-        node_css += (f"@keyframes n{i}{{0%,{t - .5}%{{fill:{c['unit']}}}{t}%,92%{{fill:{c['duty']}}}"
-                     f"97%,100%{{fill:{c['unit']}}}}}.n{i}{{animation-name:n{i}}}")
+        node_css += (f"@keyframes n{i}{{0%,{t - .5}%{{fill:{c['unit']}}}{t}%,100%{{fill:{c['duty']}}}}}"
+                     f".n{i}{{animation-name:n{i}}}")
     svg.css.append(
         ".fill{transform-box:fill-box;transform-origin:0 50%}"
         ".lbl{opacity:0}"
         "@media (prefers-reduced-motion:no-preference){"
-        ".mk{animation:mk 10s infinite}"
-        ".fill{animation:fill 10s infinite}"
-        ".n{animation-duration:10s;animation-iteration-count:infinite;animation-timing-function:step-end}"
-        f".arc{{animation:arc 10s {EASE_OUT} infinite}}"
-        ".head{animation:head 10s infinite}"
-        ".lbl{animation:lbl 10s infinite}"
+        ".mk{animation:mk 10s 1}"
+        ".fill{animation:fill 10s 1}"
+        ".n{animation-duration:10s;animation-iteration-count:1;animation-timing-function:step-end}"
+        f".arc{{animation:arc 10s {EASE_OUT} 1}}"
+        ".head{animation:head 10s 1}"
+        ".lbl{animation:lbl 10s 1}"
         + node_css + "}"
         f"@keyframes mk{{{mk}}}"
         f"@keyframes fill{{{fill}}}"
-        "@keyframes arc{0%,44%{stroke-dashoffset:1;opacity:1}58%,92%{stroke-dashoffset:0;opacity:1}"
-        "97%,100%{stroke-dashoffset:0;opacity:0}}"
-        "@keyframes head{0%,55%{opacity:0}58%,92%{opacity:1}97%,100%{opacity:0}}"
+        "@keyframes arc{0%,44%{stroke-dashoffset:1}58%,100%{stroke-dashoffset:0}}"
+        "@keyframes head{0%,55%{opacity:0}58%,100%{opacity:1}}"
         "@keyframes lbl{0%,44%{opacity:0}48%,62%{opacity:1}66%,100%{opacity:0}}"
         + REDUCED
     )
