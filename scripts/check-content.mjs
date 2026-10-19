@@ -6,7 +6,10 @@
  * Checks, whole word and case-insensitive:
  *   - profile/README.md, all of it (text, alt text, links);
  *   - every SVG in profile/assets: <text>, <tspan>, <title> and <desc> content, and comments;
- *   - the file names under profile/.
+ *   - the file names under profile/;
+ *   - every single-line string literal in scripts/build_art.py. The artwork's copy is outlined into
+ *     paths there, so the SVGs hold no readable text; the words exist only as strings in that script.
+ *     Docstrings are skipped (they describe how the script works, not what the artwork says).
  *
  * The terms are stored as SHA-256 digests of their lowercased words, so this public file does not
  * itself publish the words it keeps out. That is tidiness, not secrecy: anyone can hash a guess.
@@ -52,13 +55,15 @@ const BANNED = new Set([
 
 /** Exact strings that may contain a banned word: the Sightline address and the website address. */
 const ALLOWED = ['https://sightline.dataage.co.zw', 'developersarmy.vercel.app']
+/** Extra exact strings allowed in the generator only: the CSS easing function linear(), not a name. */
+const ALLOWED_IN_GENERATOR = ['linear(']
 
 const MAX_WORDS = 3
 const digest = (s) => createHash('sha256').update(s).digest('hex').slice(0, 24)
 
-function scan(where, text) {
+function scan(where, text, allowedExtra = []) {
   let clean = text
-  for (const allowed of ALLOWED) clean = clean.split(allowed).join(' ')
+  for (const allowed of [...ALLOWED, ...allowedExtra]) clean = clean.split(allowed).join(' ')
   const words = clean.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean)
   const hits = []
   for (let n = 1; n <= MAX_WORDS; n++) {
@@ -78,6 +83,22 @@ function svgReadable(svg) {
   return parts.join('\n')
 }
 
+/**
+ * Single-line string literals in a Python file, f-strings included (their {placeholders} come along,
+ * which is harmless). Triple-quoted strings are consumed first so docstrings are skipped, and comments
+ * are dropped so an apostrophe in a comment can't open a fake string.
+ */
+function pythonStrings(source) {
+  const out = []
+  const token = /"""[\s\S]*?"""|'''[\s\S]*?'''|#[^\n]*|"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'/g
+  for (const m of source.matchAll(token)) {
+    const t = m[0]
+    if (t.startsWith('#') || t.startsWith('"""') || t.startsWith("'''")) continue
+    out.push(t.slice(1, -1))
+  }
+  return out
+}
+
 function walk(dir) {
   return readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
     const full = path.join(dir, e.name)
@@ -88,6 +109,10 @@ function walk(dir) {
 const hits = []
 const readme = path.join(PROFILE, 'README.md')
 hits.push(...scan('profile/README.md', readFileSync(readme, 'utf8')))
+
+const generator = path.join(ROOT, 'scripts', 'build_art.py')
+const strings = pythonStrings(readFileSync(generator, 'utf8'))
+hits.push(...scan('scripts/build_art.py (strings)', strings.join('\n'), ALLOWED_IN_GENERATOR))
 
 const files = walk(PROFILE)
 for (const file of files) {
@@ -101,4 +126,6 @@ if (hits.length) {
   for (const h of hits) console.error(`  ${h}`)
   process.exit(1)
 }
-console.log(`Content guard: clean (README and ${files.filter((f) => f.endsWith('.svg')).length} SVGs checked).`)
+console.log(
+  `Content guard: clean (README, ${files.filter((f) => f.endsWith('.svg')).length} SVGs and ${strings.length} generator strings checked).`,
+)

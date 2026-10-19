@@ -18,6 +18,8 @@ No install or build. Python 3.10+ with `fontTools` and `brotli`, and Node 18+.
 
 - `python scripts/build_art.py` regenerates every SVG in `profile/assets/` from the fonts in `scripts/fonts/` (offline).
   Edit the artwork there, not in the SVGs.
-- `node scripts/check-content.mjs` fails if the profile mentions anything that must stay internal.
+- `node scripts/check-content.mjs` fails if the profile mentions anything that must stay internal. It reads the README,
+  the SVGs' titles and comments, and the strings in `scripts/build_art.py`, where the artwork's words live before they
+  are outlined.
 - `python scripts/check_svg.py` fails if an SVG is invalid, uses live text, scripts or outside resources, animates
   without a reduced-motion rule, or is missing its dark or light twin.
