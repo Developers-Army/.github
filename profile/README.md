@@ -24,7 +24,7 @@
 
 <br>
 
-### What we build
+## What we build
 
 Products we build and run ourselves, from first idea to live.
 
@@ -46,7 +46,7 @@ Products we build and run ourselves, from first idea to live.
 
 <br>
 
-### How we build
+## How we build
 
 **Agents build. A human signs off.** AI agents do the building. We write the brief and approve the result.
 
@@ -69,7 +69,7 @@ Products we build and run ourselves, from first idea to live.
 
 <br>
 
-### Principles
+## Principles
 
 A product company, not a services shop.
 
@@ -86,7 +86,7 @@ A product company, not a services shop.
 
 <br>
 
-### AI Hub
+## AI Hub
 
 **Coming soon.** A home for the AI tools and know-how we build and use.
 
